@@ -1,33 +1,44 @@
-use dotenv::dotenv;
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, ExpoPushTicket};
-use std::env;
+
+#[derive(serde::Deserialize)]
+struct Notification {
+    title: String,
+    body: String,
+    push_token: String,
+}
 
 pub async fn send_test_notification() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv().ok();
-    // temporary push token for testing purposes - will remove dotenv in prod since all tokens in db.
-    let push_token = env::var("test_notification_token")?;
+    let data = std::fs::read_to_string("mock_data.json")?;
+    let notifications: Vec<Notification> = serde_json::from_str(&data)?;
+    let expo = Expo::new(ExpoClientOptions { access_token: None });
+    let mut failures: i32 = 0;
 
+    
+    for notification in &notifications {
+        let message = ExpoPushMessage::builder([notification.push_token.as_str()])
+            .title(&notification.title)
+            .body(&notification.body)
+            .build()?;
 
-    let expo = Expo::new(ExpoClientOptions {
-        access_token: env::var("EXPO_ACCESS_TOKEN").ok(),
-    });
+        let tickets = expo.send_push_notifications(message).await?;
 
-    let message = ExpoPushMessage::builder([push_token.as_str()])
-        .title("Test notification")
-        .body("This is a test notification.")
-        .build()?;
-    let tickets = expo.send_push_notifications(message).await?;
-
-    for ticket in tickets {
-        match ticket {
-            ExpoPushTicket::Ok(ticket) => {
-                println!("Test notification accepted (ticket {}).", ticket.id);
-            }
-            ExpoPushTicket::Error(error) => {
-                return Err(std::io::Error::other(error.message).into());
+        for ticket in &tickets {
+            match &ticket {
+                ExpoPushTicket::Ok(_) => {}
+                ExpoPushTicket::Error(error) => {
+                    println!("Error sending test notification: {}", &error.message);
+                    failures += 1;
+                }
             }
         }
     }
+
+    println!(
+        "Finished sending {}/{} notifications - {} failures",
+        (&notifications.len() - failures as usize),
+        &notifications.len(),
+        &failures
+    );
 
     Ok(())
 }

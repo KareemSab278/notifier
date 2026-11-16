@@ -5,6 +5,14 @@
         "body": "This is the second test notification.",
         "push_token": "ExponentPushToken[ABCDEFG123456]"
     }]'
+
+
+    maybe i can make this listen all the time for any incoming requests like an api?
+        then it sends out the notifications as they come in? 
+
+    this would avoid startup loading and just work on the fly... hmm... 
+    so just send the json to the api endpoint this service provides and thats it - should be handled automatically and instant.
+    instead of invoking the rust program with php, php can just send the notification data to the API endpoint provided by this service.
 */
 
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, ExpoPushTicket};

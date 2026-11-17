@@ -1,4 +1,4 @@
-# expo-notifications-r
+# notifier
 
 A small HTTP service that sends push notifications through the Expo Push Service.
 

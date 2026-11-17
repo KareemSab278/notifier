@@ -348,18 +348,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826"
 
 [[package]]
-name = "expo-notifications-r"
-version = "0.1.0"
-dependencies = [
- "axum",
- "expo_push_notification_client",
- "serde",
- "serde_json",
- "tokio",
- "tower-http 0.7.1",
-]
-
-[[package]]
 name = "expo_push_notification_client"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -963,6 +951,18 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "notifier"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "expo_push_notification_client",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower-http 0.7.1",
 ]
 
 [[package]]

@@ -43,3 +43,6 @@ curl -X POST http://localhost:6767/send_notifications \
     }
   ]'
 ```
+example response:
+
+{"success":true,"message":"Sent 12 notification(s); 12 failed"}

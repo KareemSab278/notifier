@@ -22,8 +22,8 @@ pub async fn notify(
 
     let result = notification_sender::send_notifications(payload)
         .await
-        .map_err(|error| {
-            eprintln!("Failed to send notification: {error}");
+        .map_err(|_| {
+            // eprintln!("Failed to send notification: {error}");
             structs::ApiError::Internal("Failed to send notification".to_string())
         })?;
 

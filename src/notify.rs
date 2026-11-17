@@ -24,8 +24,8 @@ pub async fn send_notifications(
                 .build()
             {
                 Ok(message) => message,
-                Err(error) => {
-                    eprintln!("Message build error: {}", error);
+                Err(_) => {
+                    // eprintln!("Message build error: {}", error);
                     return (0usize, 1usize);
                 }
             };
@@ -44,8 +44,8 @@ pub async fn send_notifications(
                             ExpoPushTicket::Ok(_) => {
                                 success += 1;
                             }
-                            ExpoPushTicket::Error(error) => {
-                                eprintln!("Notification error: {}", error.message);
+                            ExpoPushTicket::Error(_) => {
+                                // eprintln!("Notification error: {}", error.message);
                                 failed += 1;
                             }
                         }
@@ -53,8 +53,8 @@ pub async fn send_notifications(
 
                     (success, failed)
                 }
-                Err(error) => {
-                    eprintln!("Request failed: {}", error);
+                Err(_) => {
+                    // eprintln!("Request failed: {}", error);
                     (0, 1)
                 }
             }
@@ -67,8 +67,8 @@ pub async fn send_notifications(
                         successful += s;
                         failures += f;
                     }
-                    Err(error) => {
-                        eprintln!("Task failed: {}", error);
+                    Err(_) => {
+                        // eprintln!("Task failed: {}", error);
                         failures += 1;
                     }
                 }
@@ -82,8 +82,8 @@ pub async fn send_notifications(
                 successful += s;
                 failures += f;
             }
-            Err(error) => {
-                eprintln!("Task failed: {}", error);
+            Err(_) => {
+                // eprintln!("Task failed: {}", error);
                 failures += 1;
             }
         }

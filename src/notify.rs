@@ -1,29 +1,12 @@
-/*
-    run like:
-    cargo run -- '[{
-        "title": "Second test notification",
-        "body": "This is the second test notification.",
-        "push_token": "ExponentPushToken[ABCDEFG123456]"
-    }]'
-
-
-    maybe i can make this listen all the time for any incoming requests like an api?
-        then it sends out the notifications as they come in?
-
-    this would avoid startup loading and just work on the fly... hmm...
-    so just send the json to the api endpoint this service provides and thats it - should be handled automatically and instant.
-    instead of invoking the rust program with php, php can just send the notification data to the API endpoint provided by this service.
-*/
-
 use crate::structs::{Notification, NotificationRequestResult};
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, ExpoPushTicket};
 use tokio::task::JoinSet;
 
 const MAX_CONCURRENT_REQUESTS: usize = 200;
 
-
-pub async fn send_notifications(recipients_json: Notification) -> Result<NotificationRequestResult, Box<dyn std::error::Error>> {
-    let notifications = vec![recipients_json];
+pub async fn send_notifications(
+    notifications: Vec<Notification>,
+) -> Result<NotificationRequestResult, Box<dyn std::error::Error>> {
     let expo = Expo::new(ExpoClientOptions { access_token: None });
 
     let mut tasks = JoinSet::new();
@@ -110,4 +93,19 @@ pub async fn send_notifications(recipients_json: Notification) -> Result<Notific
         success: successful,
         failed: failures,
     })
+}
+
+pub fn validate_notifications_payload(notifications: &[Notification]) -> Result<(), String> {
+    for notification in notifications {
+        if notification.body.is_empty() {
+            return Err("Missing body".to_string());
+        }
+        if notification.title.is_empty() {
+            return Err("Missing title".to_string());
+        }
+        if notification.push_token.is_empty() {
+            return Err("Missing push token".to_string());
+        }
+    }
+    Ok(())
 }

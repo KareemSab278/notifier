@@ -17,6 +17,10 @@ pub struct ApiResponse {
     pub message: String,
 }
 
+#[derive(serde::Serialize)]
+pub struct ErrorResponse {
+    pub error: String,
+}
 
 #[derive(Debug, serde::Serialize)]
 pub struct NotificationRequestResult {

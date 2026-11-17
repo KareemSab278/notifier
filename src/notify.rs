@@ -8,35 +8,22 @@
 
 
     maybe i can make this listen all the time for any incoming requests like an api?
-        then it sends out the notifications as they come in? 
+        then it sends out the notifications as they come in?
 
-    this would avoid startup loading and just work on the fly... hmm... 
+    this would avoid startup loading and just work on the fly... hmm...
     so just send the json to the api endpoint this service provides and thats it - should be handled automatically and instant.
     instead of invoking the rust program with php, php can just send the notification data to the API endpoint provided by this service.
 */
 
+use crate::structs::{Notification, NotificationRequestResult};
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, ExpoPushTicket};
 use tokio::task::JoinSet;
 
 const MAX_CONCURRENT_REQUESTS: usize = 200;
 
-#[derive(serde::Deserialize)]
-struct Notification {
-    title: String,
-    body: String,
-    push_token: String,
-}
 
-pub async fn send_notifications(recipients_json: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let notifications: Vec<Notification> = serde_json::from_str(recipients_json)?;
-
-    let total = notifications.len();
-
-    if total == 0 {
-        println!("No notifications to send.");
-        return Ok(());
-    }
-
+pub async fn send_notifications(recipients_json: Notification) -> Result<NotificationRequestResult, Box<dyn std::error::Error>> {
+    let notifications = vec![recipients_json];
     let expo = Expo::new(ExpoClientOptions { access_token: None });
 
     let mut tasks = JoinSet::new();
@@ -119,10 +106,8 @@ pub async fn send_notifications(recipients_json: &str) -> Result<(), Box<dyn std
         }
     }
 
-    println!(
-        "Finished sending: {}/{} successful - {} failures",
-        &successful, &total, &failures
-    );
-
-    Ok(())
+    Ok(NotificationRequestResult {
+        success: successful,
+        failed: failures,
+    })
 }

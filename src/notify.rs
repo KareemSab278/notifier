@@ -9,21 +9,25 @@ pub async fn send_notifications(
     let expo = Expo::new(ExpoClientOptions { access_token: None });
 
     let mut successful = 0usize;
-    let mut failures = 0usize;
+    let mut failed = Vec::new();
 
-    for batch in notifications.chunks(BATCH_SIZE) {
+    for (batch_number, batch) in notifications.chunks(BATCH_SIZE).enumerate() {
         let mut messages = Vec::with_capacity(batch.len());
+        let mut indexes = Vec::with_capacity(batch.len());
 
-        for notification in batch {
+        for (offset, notification) in batch.iter().enumerate() {
+            let index = u32::try_from(batch_number * BATCH_SIZE + offset)?;
+
             match ExpoPushMessage::builder([notification.push_token.as_str()])
                 .title(&notification.title)
                 .body(&notification.body)
                 .build()
             {
-                Ok(message) => messages.push(message),
-                Err(_) => {
-                    failures += 1;
+                Ok(message) => {
+                    messages.push(message);
+                    indexes.push(index);
                 }
+                Err(_) => failed.push(index),
             };
         }
 
@@ -31,27 +35,28 @@ pub async fn send_notifications(
             continue;
         }
 
-        let message_count = messages.len();
         match expo.send_push_notifications(messages).await {
             Ok(tickets) => {
-                for ticket in tickets.iter() {
+                for (index, ticket) in indexes.iter().zip(tickets.iter()) {
                     match ticket {
                         ExpoPushTicket::Ok(_) => successful += 1,
-                        ExpoPushTicket::Error(_) => failures += 1,
+                        ExpoPushTicket::Error(_) => failed.push(*index),
                     }
                 }
 
-                failures += message_count.saturating_sub(tickets.len());
+                failed.extend(indexes.iter().skip(tickets.len()).copied());
             }
             Err(_) => {
-                failures += message_count;
+                failed.extend(indexes);
             }
         }
     }
 
+    failed.sort_unstable();
+
     Ok(NotificationRequestResult {
         success: successful,
-        failed: failures,
+        failed,
     })
 }
 

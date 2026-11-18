@@ -31,7 +31,9 @@ pub async fn notify(
         success: true,
         message: format!(
             "Sent {} notification(s); {} failed",
-            result.success, result.failed
+            result.success,
+            result.failed.len()
         ),
+        failed: result.failed,
     }))
 }

@@ -1,3 +1,4 @@
 /target
 .env
 mock_data.json
+*.txt

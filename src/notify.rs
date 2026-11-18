@@ -1,90 +1,50 @@
 use crate::structs::{Notification, NotificationRequestResult};
 use expo_push_notification_client::{Expo, ExpoClientOptions, ExpoPushMessage, ExpoPushTicket};
-use tokio::task::JoinSet;
 
-const MAX_CONCURRENT_REQUESTS: usize = 200;
+const BATCH_SIZE: usize = 100;
 
 pub async fn send_notifications(
     notifications: Vec<Notification>,
 ) -> Result<NotificationRequestResult, Box<dyn std::error::Error>> {
     let expo = Expo::new(ExpoClientOptions { access_token: None });
 
-    let mut tasks = JoinSet::new();
-
     let mut successful = 0usize;
     let mut failures = 0usize;
 
-    for notification in notifications {
-        let expo = expo.clone();
+    for batch in notifications.chunks(BATCH_SIZE) {
+        let mut messages = Vec::with_capacity(batch.len());
 
-        tasks.spawn(async move {
-            let message = match ExpoPushMessage::builder([notification.push_token.as_str()])
+        for notification in batch {
+            match ExpoPushMessage::builder([notification.push_token.as_str()])
                 .title(&notification.title)
                 .body(&notification.body)
                 .build()
             {
-                Ok(message) => message,
+                Ok(message) => messages.push(message),
                 Err(_) => {
-                    // eprintln!("Message build error: {}", error);
-                    return (0usize, 1usize);
+                    failures += 1;
                 }
             };
-
-            match expo.send_push_notifications(message).await {
-                Ok(tickets) => {
-                    let mut success = 0usize;
-                    let mut failed = 0usize;
-
-                    if tickets.is_empty() {
-                        failed += 1;
-                    }
-
-                    for ticket in tickets {
-                        match &ticket {
-                            ExpoPushTicket::Ok(_) => {
-                                success += 1;
-                            }
-                            ExpoPushTicket::Error(_) => {
-                                // eprintln!("Notification error: {}", error.message);
-                                failed += 1;
-                            }
-                        }
-                    }
-
-                    (success, failed)
-                }
-                Err(_) => {
-                    // eprintln!("Request failed: {}", error);
-                    (0, 1)
-                }
-            }
-        });
-
-        if tasks.len() >= MAX_CONCURRENT_REQUESTS {
-            if let Some(result) = tasks.join_next().await {
-                match &result {
-                    Ok((s, f)) => {
-                        successful += s;
-                        failures += f;
-                    }
-                    Err(_) => {
-                        // eprintln!("Task failed: {}", error);
-                        failures += 1;
-                    }
-                }
-            }
         }
-    }
 
-    while let Some(result) = tasks.join_next().await {
-        match &result {
-            Ok((s, f)) => {
-                successful += s;
-                failures += f;
+        if messages.is_empty() {
+            continue;
+        }
+
+        let message_count = messages.len();
+        match expo.send_push_notifications(messages).await {
+            Ok(tickets) => {
+                for ticket in tickets.iter() {
+                    match ticket {
+                        ExpoPushTicket::Ok(_) => successful += 1,
+                        ExpoPushTicket::Error(_) => failures += 1,
+                    }
+                }
+
+                failures += message_count.saturating_sub(tickets.len());
             }
             Err(_) => {
-                // eprintln!("Task failed: {}", error);
-                failures += 1;
+                failures += message_count;
             }
         }
     }

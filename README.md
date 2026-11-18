@@ -14,7 +14,7 @@ It listens on port `6767`.
 
 ## How it works
 
-Send a `POST` request to `/send_notifications` with a JSON array of notifications. The service forwards each notification to Expo and returns a JSON result. Partial notification failures still return success; the response message reports the number sent and failed. Invalid JSON or a notification missing a required field returns a `400`.
+Send a `POST` request to `/send_notifications` with a JSON array of notifications. The service sends notifications to Expo in sequential batches of up to 100 messages per request and returns a JSON result. Partial notification failures still return success; the response message reports the number sent and failed. Invalid JSON or a notification missing a required field returns a `400`.
 
 Each notification in the array has a title, body, and Expo push token:
 

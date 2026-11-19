@@ -8,7 +8,6 @@ pub async fn send_notifications(
 ) -> Result<NotificationRequestResult, Box<dyn std::error::Error>> {
     let expo = Expo::new(ExpoClientOptions { access_token: None });
 
-    let mut successful = 0usize;
     let mut failed = Vec::new();
 
     for (batch_number, batch) in notifications.chunks(BATCH_SIZE).enumerate() {
@@ -39,7 +38,8 @@ pub async fn send_notifications(
             Ok(tickets) => {
                 for (index, ticket) in indexes.iter().zip(tickets.iter()) {
                     match ticket {
-                        ExpoPushTicket::Ok(_) => successful += 1,
+                        // i can reduce processing by ignoring successful tickets and only tracking errors then comparing them to get the num of successes
+                        ExpoPushTicket::Ok(_) => (),
                         ExpoPushTicket::Error(_) => failed.push(*index),
                     }
                 }
@@ -55,8 +55,8 @@ pub async fn send_notifications(
     failed.sort_unstable();
 
     Ok(NotificationRequestResult {
-        success: successful,
-        failed,
+        success: notifications.len() - failed.len(),
+        failed: failed,
     })
 }
 

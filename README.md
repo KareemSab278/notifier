@@ -10,13 +10,14 @@ Start the server with:
 cargo run
 ```
 
-It listens on port `6767`.
+The server listens on port `6767` on all network interfaces. Send requests to
+`http://localhost:6767` when calling it from the same machine.
 
 ## How it works
 
-Send a `POST` request to `/send_notifications` with a JSON array of notifications. The service sends notifications to Expo in sequential batches of up to 100 messages per request and returns a JSON result. Partial notification failures still return success; the response message reports the number sent and failed. Invalid JSON or a notification missing a required field returns a `400`.
-
-Each notification in the array has a title, body, and Expo push token:
+Send a `POST` request to `/send_notifications` (a trailing slash is also
+accepted) with a JSON array. Each array item is one notification and must
+contain non-empty `title`, `body`, and `push_token` strings:
 
 ```json
 [
@@ -28,9 +29,31 @@ Each notification in the array has a title, body, and Expo push token:
 ]
 ```
 
+The service validates the JSON and required values, then sends the notifications
+to Expo in sequential batches of up to 100. The response includes the count of
+successful Expo tickets and `failed`, the zero-based indexes of notifications
+that failed in the original array. A `success: true` response means the request
+was processed; check `failed` to see whether some notifications failed. An
+accepted Expo ticket does not guarantee that the device displayed the
+notification.
+
+For example, if the first notification succeeded and the second failed:
+
+```json
+{
+  "success": true,
+  "message": "Sent 1 notification(s); 1 failed",
+  "failed": [1]
+}
+```
+
+Invalid JSON or a missing/empty required value returns HTTP `400` with an
+`error` message. A server-side failure returns HTTP `500`.
+
 ## Test with curl
 
-Replace the example token with a valid Expo push token. This sends a real notification.
+Replace the example token with a valid Expo push token. This sends a real
+notification.
 
 ```sh
 curl -X POST http://localhost:6767/send_notifications \
@@ -43,6 +66,3 @@ curl -X POST http://localhost:6767/send_notifications \
     }
   ]'
 ```
-example response:
-
-{"success":true,"message":"Sent 12 notification(s); 12 failed"}
